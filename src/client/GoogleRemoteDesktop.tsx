@@ -136,7 +136,11 @@ export function GoogleRemoteDesktopOverlay({ browserPages, t, usePanelInfo }: Ov
           {t('support')}
         </button>
       </header>
-      {frame.error !== undefined && <p className={classes.error} role="status">{t('load.failed')}</p>}
+      {frame.error !== undefined && (
+        <p className={classes.error} role="status">
+          {t('load.failed')} <span className={classes.status}>{t('load.signin')}</span>
+        </p>
+      )}
       <div id={viewportId} className={classes.viewport} aria-label={t('title')} />
     </section>
   )
