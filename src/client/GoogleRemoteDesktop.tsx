@@ -3,12 +3,14 @@
  * retained Desktop guest that shows Google Remote Desktop.
  */
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
+import { IconChevronLeftOutlineRegular, IconChevronRightOutlineRegular,
+  IconRefreshOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import {
   classes, installStyles,
 } from './styles.ts'
 import type {
-  BrowserFrameState, BrowserPage, BrowserPageService, LocalizedProps, PanelIconProps, PanelInfo,
-  SnapshotSelectorHook,
+  BrowserFrameState, BrowserPage, BrowserPageService, BrowserTarget, LocalizedProps, PanelIconProps,
+  PanelInfo, SnapshotSelectorHook,
 } from './types.ts'
 
 // The bundle's module scope runs inside the loader factory, so this is where a
@@ -31,6 +33,13 @@ const WORKSPACE_KEY = 'global:google-remote-desktop'
 
 /** Partition namespace; the provider derives the persistent partition from it. */
 const STORAGE_NAMESPACE = 'google-remote-desktop'
+
+/**
+ * How long a reload request may go unanswered before the guest is replaced.
+ * A carrier that accepts the request publishes loading state in the same turn,
+ * so this only ever elapses when the request was refused outright.
+ */
+const RELOAD_REFUSAL_MS = 300
 
 /** A monitor with a remote-arrow mark: readable at 16-18px in the rail. */
 export function GoogleRemoteDesktopIcon({ size }: PanelIconProps): ReactNode {
@@ -68,6 +77,11 @@ export function GoogleRemoteDesktopOverlay({ browserPages, t, usePanelInfo }: Ov
   const page = useRef<BrowserPage | null>(null)
   const [frame, setFrame] = useState<BrowserFrameState>(() => browserPages.emptyFrame())
   const [opened, setOpened] = useState(false)
+  /** Bumped to retire a guest the carrier would not reload and stand up its replacement. */
+  const [generation, setGeneration] = useState(0)
+  /** Address a replacement guest must come back to; the first guest opens the entry point. */
+  const resume = useRef<BrowserTarget | undefined>(undefined)
+  const refusal = useRef<number | undefined>(undefined)
 
   useEffect(() => { if (active) setOpened(true) }, [active])
 
@@ -80,21 +94,54 @@ export function GoogleRemoteDesktopOverlay({ browserPages, t, usePanelInfo }: Ov
       openRequested: (url) => {
         // A popup the guest raised (Google sign-in, for instance) opens in this
         // same guest rather than being lost: the provider denies native popups.
-        const target = browserPages.parseAddress(url, window.location.origin)
-        if (target.ok) created.frame.loadUrl(target.target)
+        const target = resolve(browserPages, url)
+        if (target !== undefined) created.frame.loadUrl(target)
       },
     }, WORKSPACE_KEY)
     page.current = created
     const unmount = created.presentation.mount(viewportId)
     const unsubscribe = created.frame.subscribe(() => { setFrame(created.frame.getSnapshot()) })
-    navigate(created, browserPages, DESTINATIONS.computers)
+    const destination = resume.current ?? resolve(browserPages, DESTINATIONS.computers)
+    resume.current = undefined
+    if (destination !== undefined) created.frame.loadUrl(destination)
     return () => {
       unsubscribe()
       unmount()
       page.current = null
       void created.frame.dispose()
     }
-  }, [browserPages, viewportId, opened])
+  }, [browserPages, viewportId, opened, generation])
+
+  useEffect(() => () => { window.clearTimeout(refusal.current) }, [])
+
+  /**
+   * Reload the page on screen.
+   *
+   * The Desktop carrier answers a same-address reload with `<webview>.reload()`,
+   * but returns silently — publishing no state at all — when it cannot act: no
+   * address, no guest element, or an aborted lifetime. A click that publishes
+   * nothing is indistinguishable from a broken button, so a snapshot that has
+   * not moved by the next turn is read as a refusal and answered by retiring the
+   * guest and standing up its replacement, which navigates for real. With no
+   * address on screen there is nothing to reload, so the entry point is opened
+   * again rather than doing nothing.
+   */
+  const reload = (): void => {
+    const created = page.current
+    if (created === null) return
+    const before = created.frame.getSnapshot()
+    if (before.target === undefined) {
+      navigate(created, browserPages, DESTINATIONS.computers)
+      return
+    }
+    created.frame.reload()
+    window.clearTimeout(refusal.current)
+    refusal.current = window.setTimeout(() => {
+      if (page.current?.frame.getSnapshot() !== before) return
+      resume.current = before.target
+      setGeneration(current => current + 1)
+    }, RELOAD_REFUSAL_MS)
+  }
 
   const destination = (url: string) => () => {
     const current = page.current
@@ -106,25 +153,15 @@ export function GoogleRemoteDesktopOverlay({ browserPages, t, usePanelInfo }: Ov
       <header className={classes.toolbar}>
         <button type="button" aria-label={t('back')} disabled={!frame.canGoBack}
           onClick={() => { page.current?.frame.goBack() }}>
-          <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}
-            strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M15 5l-7 7 7 7" />
-          </svg>
+          <IconChevronLeftOutlineRegular />
         </button>
         <button type="button" aria-label={t('forward')} disabled={!frame.canGoForward}
           onClick={() => { page.current?.frame.goForward() }}>
-          <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}
-            strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M9 5l7 7-7 7" />
-          </svg>
+          <IconChevronRightOutlineRegular />
         </button>
-        <button type="button" aria-label={t('reload')} disabled={frame.target === undefined}
-          onClick={() => { page.current?.frame.reload() }}>
-          <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}
-            strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M20 11a8 8 0 1 0-2.3 5.7" />
-            <path d="M20 5v6h-6" />
-          </svg>
+        {/* Never disabled: with no address on screen the control re-enters the page. */}
+        <button type="button" aria-label={t('reload')} onClick={reload}>
+          <IconRefreshOutlineRegular />
         </button>
         <span className={classes.title}>{t('title')}</span>
         {frame.loading && frame.error === undefined && <span className={classes.status}>{t('load.hint')}</span>}
@@ -146,8 +183,14 @@ export function GoogleRemoteDesktopOverlay({ browserPages, t, usePanelInfo }: Ov
   )
 }
 
+/** Validate one address with the provider's fixed policy. */
+function resolve(browserPages: BrowserPageService, url: string): BrowserTarget | undefined {
+  const parsed = browserPages.parseAddress(url, window.location.origin)
+  return parsed.ok ? parsed.target : undefined
+}
+
 /** Load a Google Remote Desktop entry point in the existing guest. */
 function navigate(page: BrowserPage, browserPages: BrowserPageService, url: string): void {
-  const target = browserPages.parseAddress(url, window.location.origin)
-  if (target.ok) page.frame.loadUrl(target.target)
+  const target = resolve(browserPages, url)
+  if (target !== undefined) page.frame.loadUrl(target)
 }

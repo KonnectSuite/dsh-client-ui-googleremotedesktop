@@ -18,9 +18,25 @@ survives an application restart.
 
 Opening the panel loads `https://remotedesktop.google.com/access`; the toolbar
 carries Back, Forward, Reload and two shortcuts — **My computers**
-(`/access`) and **Remote support** (`/support`). The guest is created the first
-time the panel is opened and is then kept connected, so switching panels or
-Sessions does not reload a live remote session.
+(`/access`) and **Remote support** (`/support`). Its three navigation glyphs are
+the shell's own `@deepseek-ai/dsh-client-ui-primitives` icons, so this bar draws
+the same marks as the shell's other toolbars; the two shortcut buttons are the
+page's own. The guest is created the first time the panel is opened and is then
+kept connected, so switching panels or Sessions does not reload a live remote
+session.
+
+The overlay begins below the Desktop caption strip — offset by
+`--dsh-windows-titlebar-height`, the same figure `AppFrame` pads the frame by on
+Windows — so the toolbar occupies the row a main panel owns instead of painting
+over the window's title strip.
+
+**Reload never disables.** With no address on screen it reopens the entry point
+rather than doing nothing. Otherwise it asks the carrier to reload and the
+toolbar reports the load in progress. A carrier that accepts the request
+publishes loading state in the same turn; one that publishes nothing has refused
+it, and is read that way here: the guest is retired and its replacement navigates
+back to the address that was on screen. A refused guest creation surfaces as the
+page's load-failure notice, which names the sign-in requirement.
 
 ## Why it is not an iframe
 
@@ -73,9 +89,14 @@ produces with its `clientBundle` preset, so this package builds standalone:
 - `lib/index.js` — plain ESM for the host Loader;
 - `lib/client.js` — a closure-factory bundle that registers
   `{ id, factory }` with the page's `window.__ModuleLoader__`. Only specifiers
-  the shell's frozen module table answers (`react`, `react/jsx-runtime`) stay
-  external; everything else is inlined, because a `require` the table cannot
-  answer throws at materialization.
+  the shell's frozen module table answers (`react`, `react/jsx-runtime`, the
+  platform packages — see `MODULE_TABLE`) stay external; everything else is
+  inlined, because a `require` the table cannot answer throws at materialization.
+
+`src/client/primitives.d.ts` declares the handful of icon components the toolbar
+imports. Only their types are missing in this checkout — the specifier resolves at
+runtime from the shell's frozen module table — and the mirror is kept narrow so a
+changed prop surfaces as a type error here.
 
 ## Install into a profile
 

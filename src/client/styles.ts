@@ -33,6 +33,14 @@ const STYLE_TAG_ID = '@deepseek-ai/dsh-client-ui-googleremotedesktop/page.css'
 const css = `
 .${classes.page}{flex:1;min-height:0;background:var(--dsw-alias-bg-base)}
 .${classes.overlay}{position:absolute;top:0;bottom:0;left:var(--dsh-main-left);right:var(--dsh-main-right);z-index:1;display:flex;flex-direction:column;overflow:hidden;background:var(--dsw-alias-bg-base);visibility:hidden;pointer-events:none}
+/* The overlay layer spans the whole frame, which on Windows includes the
+   Electron caption strip above every panel (the frame is padded by it, so the
+   centre column starts below). Landing the overlay at the frame's top therefore
+   paints this page over the window's caption row and puts this toolbar on the
+   row the shell's own header owns. Offset by the same strip the centre column is
+   offset by; the figure is declared only under this attribute, so every other
+   platform keeps the rule above unchanged. */
+[data-windows-titlebar] .${classes.overlay}{top:var(--dsh-windows-titlebar-height)}
 .${classes.overlay}[data-active]{visibility:visible;pointer-events:auto}
 .${classes.toolbar}{height:42px;flex:none;display:flex;align-items:center;gap:6px;padding:0 12px;border-bottom:1px solid var(--dsw-alias-border-l3)}
 .${classes.toolbar} button{display:grid;place-items:center;width:28px;height:28px;border:0;border-radius:6px;background:transparent;color:var(--dsw-alias-label-primary);cursor:pointer}
