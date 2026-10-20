@@ -18,7 +18,8 @@
     "./client": {
       "default": "./lib/client.js"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./locale/*.json": "./locale/*.json"
   },
   "dsh": {
     "bundle": {
@@ -44,6 +45,8 @@
     "typecheck": "tsc --noEmit"
   },
   "files": [
+    "icon.svg",
+    "locale/*.json",
     "lib/index.js",
     "lib/index.d.ts",
     "lib/client.js",
@@ -58,5 +61,6 @@
     "tsdown": "^0.22.14",
     "typescript": "^5.6.0"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "icon": "./icon.svg"
 }
