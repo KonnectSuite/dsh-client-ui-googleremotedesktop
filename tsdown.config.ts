@@ -17,7 +17,7 @@
 import type { UserConfig } from 'tsdown'
 
 /** Plugin id (package name): the module-table registration key and bundle identity. */
-const ID = '@deepseek-ai/dsh-client-ui-googleremotedesktop'
+const ID = '@aryacode/dsh-client-ui-googleremotedesktop'
 
 /** Specifiers the shell seeds into the module table, from its own platform roster. */
 const MODULE_TABLE = [

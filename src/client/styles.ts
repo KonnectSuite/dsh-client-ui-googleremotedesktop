@@ -23,7 +23,7 @@ export const classes = {
 } as const
 
 /** Stable style-tag identity for this package, also used to detect a second install. */
-const STYLE_TAG_ID = '@deepseek-ai/dsh-client-ui-googleremotedesktop/page.css'
+const STYLE_TAG_ID = '@aryacode/dsh-client-ui-googleremotedesktop/page.css'
 
 /**
  * The overlay borrows the shell's own main-column bounds
@@ -63,7 +63,7 @@ export function installStyles(): void {
   if (typeof document === 'undefined') return
   if (document.querySelector(`style[data-plugin-css=${JSON.stringify(STYLE_TAG_ID)}]`) !== null) return
   const tag = document.createElement('style')
-  tag.dataset.plugin = '@deepseek-ai/dsh-client-ui-googleremotedesktop'
+  tag.dataset.plugin = '@aryacode/dsh-client-ui-googleremotedesktop'
   tag.dataset.pluginCss = STYLE_TAG_ID
   tag.textContent = css
   document.head.appendChild(tag)

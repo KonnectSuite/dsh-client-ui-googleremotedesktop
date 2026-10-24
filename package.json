@@ -1,8 +1,7 @@
 {
-  "name": "@deepseek-ai/dsh-client-ui-googleremotedesktop",
+  "name": "@aryacode/dsh-client-ui-googleremotedesktop",
   "description": "AryaAI sidebar page that keeps Google Remote Desktop one click away, with a persistent sign-in",
   "version": "0.1.0",
-  "private": true,
   "repository": {
     "type": "git",
     "url": "git+https://github.com/KonnectSuite/dsh-client-ui-googleremotedesktop.git"

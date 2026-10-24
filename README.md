@@ -105,9 +105,9 @@ selects it by name and links the checkout:
 
 ```jsonc
 // <profile>/package.json
-"dsh": { "profile": { "bundles": [ /* … */ "@deepseek-ai/dsh-client-ui-googleremotedesktop" ] } },
+"dsh": { "profile": { "bundles": [ /* … */ "@aryacode/dsh-client-ui-googleremotedesktop" ] } },
 "dependencies": {
-  "@deepseek-ai/dsh-client-ui-googleremotedesktop": "link:C:/path/to/dsh-client-ui-googleremotedesktop"
+  "@aryacode/dsh-client-ui-googleremotedesktop": "link:C:/path/to/dsh-client-ui-googleremotedesktop"
 }
 ```
 
